@@ -25,9 +25,9 @@ export async function serve(entryPoint: string, options?: Options) {
         metafile: true,
         format: "esm",
         jsx: "transform",
-        jsxFactory: compilerOptions.jsxFactory,
-        jsxFragment: compilerOptions.jsxFragmentFactory,
-        jsxImportSource: compilerOptions.jsxImportSource,
+        jsxFactory: compilerOptions?.jsxFactory,
+        jsxFragment: compilerOptions?.jsxFragmentFactory,
+        jsxImportSource: compilerOptions?.jsxImportSource,
         plugins: [
             ...(options?.plugins ?? []),
             catchEntry(),
