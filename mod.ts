@@ -9,15 +9,17 @@ const mimeTable: { [ext: string]: string | undefined; } = {
 
 type Options = {
     denoConfigPath?: string;
-} & Omit<esbuild.BuildOptions, "format" | "metafile" | "bundle" | "entryPoints" | "jsx">;
+} & Omit<esbuild.BuildOptions, "format" | "metafile" | "bundle" | "entryPoints" | "jsx" | "outfile">;
 
 export async function serve(entryPoint: string, options?: Options) {
-    const { denoConfigPath, ...esbuildConfig } = options ?? {};
+    const { denoConfigPath, outdir: outdirOpt, ...esbuildConfig } = options ?? {};
     const denoConfigText = await (denoConfigPath && Deno.readTextFile(denoConfigPath));
     const denoConfig = denoConfigText !== undefined ? JSON.parse(denoConfigText) : undefined;
     const { compilerOptions } = denoConfig ?? {};
+    const outdir = outdirOpt ?? "./dist";
     const context = await esbuild.context({
         ...esbuildConfig,
+        outdir,
         entryPoints: [entryPoint],
         bundle: true,
         metafile: true,
