@@ -32,7 +32,7 @@ export async function serve(entryPoint: string, options?: Options) {
             ...(options?.plugins ?? []),
             catchEntry(),
             cssLoader(),
-            ...denoPlugins({ "configPath": options?.denoConfigPath }),
+            ...denoPlugins({ "configPath": denoConfigPath }),
             generateIndexFile(),
         ]
     });
