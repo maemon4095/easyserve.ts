@@ -38,7 +38,7 @@ export async function serve(entryPoint: string, options?: Options) {
     });
 
     await context.watch();
-    const { host, port } = await context.serve({ servedir: options?.outdir });
+    const { host, port } = await context.serve({ servedir: outdir });
     const hostname = host === "0.0.0.0" ? "localhost" : host;
     console.log(`Serving http://${hostname}:${port}`);
 }
