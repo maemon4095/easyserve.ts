@@ -8,19 +8,17 @@ const mimeTable: { [ext: string]: string | undefined; } = {
 };
 
 type Options = {
-    outdir?: string;
     denoConfigPath?: string;
-    plugins?: esbuild.Plugin[];
-};
+} & Omit<esbuild.BuildOptions, "format" | "metafile" | "bundle" | "entryPoints" | "jsx">;
 
 export async function serve(entryPoint: string, options?: Options) {
-    const denoConfigText = await (options?.denoConfigPath && Deno.readTextFile(options.denoConfigPath));
+    const { denoConfigPath, ...esbuildConfig } = options ?? {};
+    const denoConfigText = await (denoConfigPath && Deno.readTextFile(denoConfigPath));
     const denoConfig = denoConfigText !== undefined ? JSON.parse(denoConfigText) : undefined;
     const { compilerOptions } = denoConfig ?? {};
-    const outdir = options?.outdir ?? "./dist";
     const context = await esbuild.context({
+        ...esbuildConfig,
         entryPoints: [entryPoint],
-        outdir,
         bundle: true,
         metafile: true,
         format: "esm",
@@ -38,7 +36,7 @@ export async function serve(entryPoint: string, options?: Options) {
     });
 
     await context.watch();
-    const { host, port } = await context.serve({ servedir: outdir });
+    const { host, port } = await context.serve({ servedir: options?.outdir });
     const hostname = host === "0.0.0.0" ? "localhost" : host;
     console.log(`Serving http://${hostname}:${port}`);
 }
