@@ -24,7 +24,7 @@ export async function serve(entryPoint: string, options?: Options) {
         bundle: true,
         metafile: true,
         format: "esm",
-        jsx: "transform",
+        jsx: compilerOptions?.jsxImportSource ? "automatic" : "transform",
         jsxFactory: compilerOptions?.jsxFactory,
         jsxFragment: compilerOptions?.jsxFragmentFactory,
         jsxImportSource: compilerOptions?.jsxImportSource,
