@@ -1,6 +1,7 @@
-import * as esbuild from "https://deno.land/x/esbuild@v0.21.2/mod.js";
-import * as path from "https://deno.land/std@0.224.0/path/mod.ts";
+import * as esbuild from "./deps/esbuild.ts";
+import * as path from "./deps/path.ts";
 import { denoPlugins } from "jsr:@luca/esbuild-deno-loader";
+import loaderOverride from "./plugins/loaderOverride.ts";
 
 const mimeTable: { [ext: string]: string | undefined; } = {
     ".css": "text/css",
@@ -17,6 +18,11 @@ export async function serve(entryPoint: string, options?: Options) {
     const denoConfig = denoConfigText !== undefined ? JSON.parse(denoConfigText) : undefined;
     const { compilerOptions } = denoConfig ?? {};
     const outdir = outdirOpt ?? "./dist";
+    const loaderOverridePlugin = (() => {
+        const loader = options?.loader ?? { ".css": "css", ".module.css": "local-css" };
+        if (loader === undefined) return [];
+        return [loaderOverride({ importMap: denoConfig?.imports ?? {}, loader })];
+    })();
     const context = await esbuild.context({
         ...esbuildConfig,
         outdir,
@@ -30,8 +36,9 @@ export async function serve(entryPoint: string, options?: Options) {
         jsxImportSource: compilerOptions?.jsxImportSource,
         plugins: [
             ...(options?.plugins ?? []),
+            catchData(),
             catchEntry(),
-            cssLoader(),
+            ...loaderOverridePlugin,
             ...denoPlugins({ "configPath": denoConfigPath }),
             generateIndexFile(),
         ]
@@ -41,39 +48,6 @@ export async function serve(entryPoint: string, options?: Options) {
     const { host, port } = await context.serve({ servedir: outdir });
     const hostname = host === "0.0.0.0" ? "localhost" : host;
     console.log(`Serving http://${hostname}:${port}`);
-}
-
-function cssLoader(): esbuild.Plugin {
-    return {
-        name: "css",
-        setup(build) {
-            build.onResolve({ filter: /^.*\.module\.css$/ }, args => {
-                const p = path.isAbsolute(args.path) ? args.path : path.join(args.resolveDir, args.path);
-                return {
-                    path: p,
-                    namespace: "css-module"
-                };
-            });
-
-            build.onResolve({ filter: /^.*\.css$/ }, args => {
-                const p = path.isAbsolute(args.path) ? args.path : path.join(args.resolveDir, args.path);
-                return {
-                    path: p,
-                    namespace: "css"
-                };
-            });
-
-            build.onLoad({ filter: /.*/, namespace: "css" }, async args => {
-                const contents = await Deno.readTextFile(args.path);
-                return { contents, loader: "css" };
-            });
-
-            build.onLoad({ filter: /.*/, namespace: "css-module" }, async args => {
-                const contents = await Deno.readTextFile(args.path);
-                return { contents, loader: "local-css" };
-            });
-        }
-    };
 }
 
 function generateIndexFile(): esbuild.Plugin {
@@ -151,6 +125,20 @@ function catchEntry(): esbuild.Plugin {
                     };
                 }
                 return undefined;
+            });
+        }
+    };
+}
+
+function catchData(): esbuild.Plugin {
+    return {
+        "name": "data",
+        setup(build) {
+            build.onResolve({ filter: /^data:.*$/ }, args => {
+                return {
+                    path: args.path,
+                    external: true
+                };
             });
         }
     };
