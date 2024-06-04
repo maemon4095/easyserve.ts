@@ -120,8 +120,11 @@ function catchEntry(): esbuild.Plugin {
         setup(build: esbuild.PluginBuild) {
             build.onResolve({ filter: /.*/ }, args => {
                 if (args.kind === "entry-point") {
+                    const p = path.isAbsolute(args.path)
+                        ? args.path
+                        : path.join(args.resolveDir, args.path);
                     return {
-                        "path": args.path,
+                        path: p
                     };
                 }
                 return undefined;
